@@ -34,9 +34,9 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="Paranormal OS"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ParanormalOS"
+        android:theme="@android:style/Theme.DeviceDefault"
         android:hardwareAccelerated="true"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
