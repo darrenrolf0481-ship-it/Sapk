@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-files-path
+        name="paranormal_evidence"
+        path="ParanormalOS_Evidence/" />
+    <external-cache-path
+        name="cache"
+        path="." />
+</paths>
