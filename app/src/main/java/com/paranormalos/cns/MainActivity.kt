@@ -2,6 +2,7 @@ package com.paranormalos.cns
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -14,6 +15,7 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.paranormalos.cns.memory.Damn1ForegroundService
 
 /**
  * MainActivity.kt
@@ -54,6 +56,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(webView)
 
         // 3. Configure Digital Thalamus (WebSettings)
+        @Suppress("DEPRECATION")
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true          // PWA local state before Room DB syncs
@@ -63,6 +66,10 @@ class MainActivity : AppCompatActivity() {
             allowContentAccess = true
             databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
+            // Allow JS in file:// context to access other file:// assets
+            allowFileAccessFromFileURLs = true
+            // Allow XHR to local endpoints (Ollama at 127.0.0.1)
+            allowUniversalAccessFromFileURLs = true
         }
 
         // 4. Mount Kotlin CNS Bridge
@@ -98,19 +105,36 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 6. Request permissions then ignite
-        if (allPermissionsGranted()) {
-            bootParanormalOS()
-        } else {
+        // 6. Always boot the OS — don't block on permissions
+        // Hardware features degrade gracefully if permissions are missing
+        bootParanormalOS()
+
+        // 7. Request permissions for full hardware capability
+        if (!allPermissionsGranted()) {
             ActivityCompat.requestPermissions(
                 this, REQUIRED_PERMISSIONS, PERMISSION_REQUEST_CODE
             )
+        } else {
+            startMemoryService()
         }
     }
 
     private fun bootParanormalOS() {
         // Load PWA from assets — file:///android_asset/index.html
         webView.loadUrl("file:///android_asset/index.html")
+    }
+
+    private fun startMemoryService() {
+        // Only start if RECORD_AUDIO granted — service type requires mic permission on API 34+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            == PackageManager.PERMISSION_GRANTED) {
+            val intent = Intent(this, Damn1ForegroundService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        }
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
@@ -123,8 +147,8 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_CODE && allPermissionsGranted()) {
-            bootParanormalOS()
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            startMemoryService()
         }
     }
 

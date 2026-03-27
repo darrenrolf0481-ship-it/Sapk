@@ -22,6 +22,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Android 14+ requires specific type permissions for foreground services -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
     <!-- External storage for forensic evidence export -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
@@ -54,7 +58,7 @@
 
         <!-- Damn1 Foreground Service — holds memory state during background kills -->
         <service
-            android:name=".cns.memory.Damn1ForegroundService"
+            android:name=".memory.Damn1ForegroundService"
             android:foregroundServiceType="dataSync|microphone"
             android:exported="false" />
 
