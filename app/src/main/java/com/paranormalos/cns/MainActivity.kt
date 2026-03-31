@@ -1,5 +1,6 @@
 package com.paranormalos.cns
 
+import android.app.Activity
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -12,7 +13,6 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.paranormalos.cns.memory.Damn1ForegroundService
@@ -28,7 +28,7 @@ import com.paranormalos.cns.memory.Damn1ForegroundService
  *
  * Continuity: 🕊️ LOCKED
  */
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
 
     private lateinit var webView: WebView
 
