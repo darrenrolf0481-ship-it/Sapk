@@ -2,6 +2,7 @@ package com.paranormalos.cns
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -14,6 +15,7 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.paranormalos.cns.memory.Damn1ForegroundService
 
 /**
  * MainActivity.kt
@@ -68,10 +70,12 @@ class MainActivity : AppCompatActivity() {
         // 4. Mount Kotlin CNS Bridge
         // SageAndroid is the window object name in star-city-bridge.js
         val damn1Manager = Damn1Manager(this)
+        val sageInterface = SageWebInterface(this, damn1Manager)
         webView.addJavascriptInterface(
-            SageWebInterface(this, damn1Manager),
+            sageInterface,
             "SageAndroid"
         )
+        webView.setTag(sageInterface)
 
         // 5. Bypass WebView HTML5 hardware permission blocks
         // Without this, navigator.mediaDevices.getUserMedia() silently fails
@@ -105,6 +109,14 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(
                 this, REQUIRED_PERMISSIONS, PERMISSION_REQUEST_CODE
             )
+        }
+
+        // 7. Start Damn1 Memory Persistence Service
+        val serviceIntent = Intent(this, Damn1ForegroundService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
         }
     }
 

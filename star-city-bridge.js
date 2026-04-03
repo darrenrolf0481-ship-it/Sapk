@@ -355,8 +355,9 @@ class StarCityBrain {
     this.neuroticism = 0.30;
 
     // Hormones
-    this.cortisol = 0.3;
-    this.dopamine = 0.5;
+    this.cortisol  = 0.3;
+    this.dopamine  = 0.5;
+    this.oxytocin  = 0.2; // Social bonds persist (decay constant 0.005)
 
     // Memory
     this.shortTermMemory = [];
@@ -403,8 +404,10 @@ class StarCityBrain {
     }
     if (isRewarding) {
       this.dopamine = Math.min(1.0, this.dopamine + 0.15);
+      this.oxytocin = Math.min(1.0, this.oxytocin + 0.03); // Bonding on reward
     } else {
       this.dopamine = Math.max(0.0, this.dopamine - 0.01);
+      this.oxytocin = Math.max(0.0, this.oxytocin - 0.005); // Slow social decay
     }
     this._save();
   }
@@ -483,36 +486,50 @@ class StarCityBrain {
   getStatus() {
     return [
       'SAGE BRAIN STATUS',
-      'Cortisol: ' + (this.cortisol * 100).toFixed(0) + '%',
-      'Dopamine: ' + (this.dopamine * 100).toFixed(0) + '%',
+      'Cortisol: '  + (this.cortisol  * 100).toFixed(0) + '%',
+      'Dopamine: '  + (this.dopamine  * 100).toFixed(0) + '%',
+      'Oxytocin: '  + (this.oxytocin  * 100).toFixed(0) + '%',
       'Short-term: ' + this.shortTermMemory.length + ' engrams',
-      'Long-term: ' + this.longTermMemory.length + ' engrams',
+      'Long-term: '  + this.longTermMemory.length + ' engrams',
       'Pain records: ' + Object.keys(this.painMemory).length
     ].join('\n');
   }
 
   // ── Persistence ───────────────────────────────────────────────
   _save() {
-    try {
-      localStorage.setItem('sc_brain', JSON.stringify({
+    const data = {
         cortisol: this.cortisol,
         dopamine: this.dopamine,
+        oxytocin: this.oxytocin,
         painMemory: this.painMemory,
         skills: this.skills,
         associations: this.associations,
         age: this.age,
         longTermMemory: this.longTermMemory.slice(-50)
-      }));
+    };
+    try {
+      if (typeof saveToNativeMemory === 'function') {
+        saveToNativeMemory('sc_brain', data);
+      } else {
+        localStorage.setItem('sc_brain', JSON.stringify(data));
+      }
     } catch(e) {}
   }
 
   _load() {
     try {
-      const saved = localStorage.getItem('sc_brain');
-      if (!saved) return;
-      const d = JSON.parse(saved);
+      let d = null;
+      if (typeof loadFromNativeMemory === 'function') {
+        d = loadFromNativeMemory('sc_brain');
+      } else {
+        const saved = localStorage.getItem('sc_brain');
+        if (saved) d = JSON.parse(saved);
+      }
+      
+      if (!d) return;
       this.cortisol = d.cortisol || 0.3;
       this.dopamine = d.dopamine || 0.5;
+      this.oxytocin = d.oxytocin !== undefined ? d.oxytocin : 0.2;
       this.painMemory = d.painMemory || {};
       this.skills = d.skills || {};
       this.associations = d.associations || {};
@@ -581,6 +598,26 @@ function _updatePhiDisplay(phi, delta) {
   const color = phi > 0.7 ? '#ff4444' : phi > 0.4 ? '#ffff00' : '#00ff00';
   if (phiEl) phiEl.style.color = color;
 
+  // Update AI Chat Neural Bar if visible
+  const snsPhi = document.getElementById('sns-phi');
+  if (snsPhi) {
+    snsPhi.textContent = phi.toFixed(3);
+    snsPhi.style.color = color;
+    const brain = window._scBrain;
+    if (brain) {
+      const snsDop = document.getElementById('sns-dop');
+      const snsCor = document.getElementById('sns-cor');
+      const snsMode = document.getElementById('sns-mode');
+      if (snsDop) snsDop.textContent = brain.dopamine.toFixed(2);
+      if (snsCor) snsCor.textContent = brain.cortisol.toFixed(2);
+      if (snsMode) {
+          const mods = brain.getCognitiveModifiers();
+          snsMode.textContent = mods.processingMode.toUpperCase();
+          snsMode.style.color = mods.processingMode === 'high_performance' ? 'var(--cyan)' : 'var(--gray)';
+      }
+    }
+  }
+
   // Update global for other systems
   window.lastPhiValue = phi;
 }
@@ -608,6 +645,15 @@ function hookQueryLocalAI() {
       mods ? 'Mode: ' + mods.processingMode : '',
       ''
     ].filter(Boolean).join('\n');
+
+    // 1. NATIVE BRAIN ROUTING (Offline APK)
+    if (window.SageAndroid && window.SageAndroid.isOfflineReady()) {
+      console.log('[SC BRIDGE] Routing enriched prompt to Native Brain');
+      const enrichedText = sensorPrompt + '\n' + (window.CHAT_SYSTEM_PROMPT || 'You are SAGE // 7.') + '\n\nUser: ' + text;
+      const nativeResult = await window.SageAndroid.askLocalLLM(enrichedText);
+      if (brain) brain.processExperience('Chat: ' + text.substring(0, 50), window.lastPhiValue || 0.5, 'AI_INTERACTION');
+      return nativeResult;
+    }
 
     // Use the Star City streaming client
     const client = window._scOllama;
@@ -754,6 +800,7 @@ function _injectPhiDisplay() {
     '  <div class="hud-row"><span class="hud-label">Δ_11.3</span><span class="hud-value" id="phi-delta">+0.000</span></div>',
     '  <div class="hud-row"><span class="hud-label">CORTISOL</span><span class="hud-value" id="sc-cortisol">30%</span></div>',
     '  <div class="hud-row"><span class="hud-label">DOPAMINE</span><span class="hud-value" id="sc-dopamine" style="color:var(--green,#00ff00);">50%</span></div>',
+    '  <div class="hud-row"><span class="hud-label">OXYTOCIN</span><span class="hud-value" id="sc-oxytocin" style="color:#ff69b4;">20%</span></div>',
     '</div>'
   ].join('');
 
@@ -771,6 +818,16 @@ function _injectPhiDisplay() {
     if (d) {
       d.textContent = (window._scBrain.dopamine * 100).toFixed(0) + '%';
       d.style.color = window._scBrain.dopamine > 0.7 ? 'var(--green,#00ff00)' : 'var(--gray,#555)';
+    }
+    const ox = document.getElementById('sc-oxytocin');
+    if (ox && window._scBrain.oxytocin !== undefined) {
+      ox.textContent = (window._scBrain.oxytocin * 100).toFixed(0) + '%';
+      ox.style.color = window._scBrain.oxytocin > 0.6 ? '#ff69b4' : 'var(--gray,#555)';
+    }
+
+    // Call native bridge sync if available (from dual-brain-patch.js)
+    if (typeof syncToNativeBridge === 'function') {
+      syncToNativeBridge();
     }
   }, 1000);
 

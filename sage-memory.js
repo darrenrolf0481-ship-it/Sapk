@@ -754,15 +754,21 @@ async function sendChat() {
   input.focus();
 
   try {
-    const resp = await fetch('http://127.0.0.1:8001/sage/chat', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({message: msg})
-    });
-    const data = await resp.json();
+    let reply = '';
+    if (typeof queryLocalAI === 'function') {
+      reply = await queryLocalAI(msg);
+    } else {
+      const resp = await fetch('http://127.0.0.1:8001/sage/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: msg})
+      });
+      const data = await resp.json();
+      reply = data.reply || data.ack || '';
+    }
 
     // Show Sage reply (uses .reply for LLM, or .ack for base placeholder)
-    appendChatMessage('Sage > ' + (data.reply || data.ack), 'sage');
+    appendChatMessage('Sage > ' + reply, 'sage');
 
   } catch(e) {
     appendChatMessage('System > Transmission failed: ' + e.message, 'error');

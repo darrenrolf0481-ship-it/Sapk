@@ -124,6 +124,7 @@
     justify-content: flex-end;
   }
 
+  #topbar { position: relative; z-index: 1000; }
   #topbar.hide { display: none; }
 
   /* ─── SCREEN CONTAINER ─── */
@@ -1136,12 +1137,46 @@
   .ai-chat-input-area {
     flex-shrink: 0;
     display: flex;
-    gap: 8px;
-    padding: 10px 12px;
-    padding-bottom: calc(10px + var(--safe-bottom));
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+    padding-bottom: calc(8px + var(--safe-bottom));
     background: var(--bg2);
     border-top: 1px solid var(--border);
   }
+  .ai-chat-attach-row {
+    width: 100%;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .ai-chat-attach-row.has-file { display: flex; }
+  .ai-chat-attach-badge {
+    flex: 1;
+    font-size: 10px;
+    color: var(--green);
+    padding: 3px 8px;
+    border: 1px solid var(--green-dim);
+    border-radius: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ai-chat-attach-btn {
+    background: none;
+    border: 1px solid var(--gray-dark);
+    color: var(--gray);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    align-self: flex-end;
+    height: 44px;
+  }
+  .ai-chat-attach-btn:active { border-color: var(--green); color: var(--green); }
 
   .ai-chat-input-area textarea {
     flex: 1;
@@ -1457,6 +1492,20 @@
         <div class="dash-sub">FORENSIC INVESTIGATION SUITE // BUILD 2.0.0-PWA</div>
         <div class="dash-ticker" id="dash-ticker">INITIALIZING SENSORS...</div>
       </div>
+
+      <!-- SAGE MODULE STATUS INDICATORS -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);">
+        <div id="dmn-status" style="color:#ff69b4;font-size:9px;letter-spacing:1px;font-family:var(--font-mono);">BOND: 20% | MODE: DORMANT</div>
+        <div style="color:var(--border);font-size:9px;">|</div>
+        <div id="memory-shield" style="color:var(--cyan);font-size:9px;letter-spacing:1px;font-family:var(--font-mono);">SHIELD: ACTIVE (100% INTEGRITY)</div>
+        <div style="color:var(--border);font-size:9px;">|</div>
+        <div id="sync-status" style="color:var(--white);font-size:9px;letter-spacing:1px;font-family:var(--font-mono);opacity:0.8;">SYNC: INITIALIZING</div>
+        <div style="color:var(--border);font-size:9px;">|</div>
+        <div id="lineage" style="color:var(--gray);font-size:9px;letter-spacing:1px;font-family:var(--font-mono);opacity:0.6;">LINEAGE: THE COUNCIL × MERLIN</div>
+        <div style="color:var(--border);font-size:9px;">|</div>
+        <div id="council-link" style="color:#ffcc00;font-size:9px;letter-spacing:1px;font-family:var(--font-mono);opacity:0.8;">COUNCIL HANDSHAKE: PENDING</div>
+      </div>
+
       <div class="dash-grid">
         <div class="grid-card special" onclick="navigate('sensors')">
           <div class="grid-badge"></div>
@@ -1523,6 +1572,15 @@
         </div>
 
       </div>
+
+      <!-- NEURAL COLONY MONITOR -->
+      <div class="panel" style="margin: 0 16px 16px 16px;">
+        <div class="panel-title">NEURAL COLONY MONITOR</div>
+        <div id="colony-monitor" style="min-height:30px; max-height:150px; overflow-y:auto;">
+          <div style="color:var(--gray);font-size:9px;text-align:center;padding:4px;letter-spacing:1px;">COLONY DORMANT</div>
+        </div>
+      </div>
+
       <div class="dev-console-btn" onclick="navigate('devcon')">
         &gt;_ OPEN DEVELOPER CONSOLE
       </div>
@@ -1665,6 +1723,20 @@
         <div class="panel-title">SAVED RECORDINGS</div>
         <div id="evp-files"></div>
         <div id="evp-empty" style="color:var(--gray); font-size:12px; padding:8px 0;">No recordings yet. Start recording above.</div>
+      </div>
+
+      <!-- Upload Existing Audio for AI Analysis -->
+      <div class="panel" style="margin-top:16px; border-color:var(--cyan);">
+        <div class="panel-title" style="color:var(--cyan);">UPLOAD AUDIO FOR SAGE ANALYSIS</div>
+        <div style="font-size:11px;color:var(--gray);margin-bottom:10px;line-height:1.5;">
+          Upload any audio file — SAGE will perform EVP classification, frequency analysis, and anomaly detection.
+        </div>
+        <button class="btn" style="width:100%;margin-bottom:8px;" onclick="document.getElementById('evp-upload-input').click()">
+          📁 SELECT AUDIO FILE
+        </button>
+        <input type="file" id="evp-upload-input" accept="audio/*,.mp3,.wav,.ogg,.webm,.m4a,.flac" style="display:none" onchange="analyzeUploadedEVP(event)">
+        <div id="evp-upload-status" style="font-size:11px;color:var(--gray);display:none;"></div>
+        <div id="evp-ai-result" style="display:none;margin-top:10px;padding:10px;background:var(--bg1);border:1px solid var(--green);font-size:12px;line-height:1.7;color:var(--white);"></div>
       </div>
     </div>
 
@@ -1988,6 +2060,15 @@
       </div>
 
       <div class="panel">
+        <div class="panel-title">MULTIMODAL ATTACHMENT</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="file" id="voice-file-input" style="display:none" onchange="handleVoiceFileUpload(event)">
+          <button class="btn" style="flex:1; border-color:var(--cyan); color:var(--cyan);" onclick="document.getElementById('voice-file-input').click()">📎 ATTACH EVIDENCE</button>
+          <span id="voice-attach-badge" style="font-size:9px; color:var(--gray); flex:1;">NO ATTACHMENT</span>
+        </div>
+      </div>
+
+      <div class="panel">
         <div class="panel-title">MANUAL TEXT RELAY</div>
         <div class="chat-input-row" style="margin-top:4px;">
           <input class="input" id="voice-text-in" placeholder="Type directive..." style="margin-bottom:0; flex:1;">
@@ -2102,9 +2183,16 @@
   <!-- AI CHAT — Full Claude Neural Link                  -->
   <!-- ═══════════════════════════════════════════════════ -->
   <div id="screen-aichat" class="screen" style="padding:0; display:none; flex-direction:column;">
+    <!-- SAGE NEURAL STATUS BAR -->
+    <div id="sage-neural-status" style="background:var(--bg2); border-bottom:1px solid var(--cyan-dim); padding:4px 10px; display:flex; gap:12px; font-size:9px; color:var(--cyan); letter-spacing:1px; font-family:var(--font-mono); height:18px; align-items:center;">
+        <div style="display:flex; align-items:center;"><span style="color:var(--gray);margin-right:4px;">Φ:</span> <span id="sns-phi">0.000</span></div>
+        <div style="display:flex; align-items:center;"><span style="color:var(--gray);margin-right:4px;">DOP:</span> <span id="sns-dop">0.00</span></div>
+        <div style="display:flex; align-items:center;"><span style="color:var(--gray);margin-right:4px;">COR:</span> <span id="sns-cor">0.00</span></div>
+        <div style="flex:1; text-align:right; font-size:8px; opacity:0.6;" id="sns-mode">PROCESSING_NOMINAL</div>
+    </div>
     <div class="chat-screen" id="aichat-shell">
       <div class="chat-config-bar">
-        <button onclick="navigate('dashboard')" style="background:none;border:1px solid var(--red-dim);color:var(--red);font-family:var(--font-mono);font-size:10px;padding:4px 8px;cursor:pointer;letter-spacing:1px;flex-shrink:0;">◀ ABORT</button>
+        <button onclick="goBack()" style="background:none;border:1px solid var(--red-dim);color:var(--red);font-family:var(--font-mono);font-size:10px;padding:4px 8px;cursor:pointer;letter-spacing:1px;flex-shrink:0;">◀ ABORT</button>
         <div class="chat-model-badge" id="chat-model-label" style="margin-left:6px;">SAGE // 7</div>
         <div style="font-size:10px; color:var(--gray); flex:1; padding-left:8px;" id="chat-ctx-label">Context: Investigation Mode</div>
         <button class="chat-clear-btn" onclick="clearAIChat()">CLEAR</button>
@@ -2117,7 +2205,16 @@
         </div>
       </div>
       <div class="ai-chat-input-area">
-        <textarea id="ai-chat-input" placeholder="Ask the AI anything..." rows="1"
+        <div class="ai-chat-attach-row" id="ai-attach-row">
+          <span class="ai-chat-attach-badge" id="ai-attach-badge"></span>
+          <button onclick="clearAIChatFile()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>
+        </div>
+        <input type="file" id="ai-chat-file-input" accept="image/*,video/*,audio/*,.pdf,.txt,.json,.md,.csv,.log,.py,.js,.kt,.html,.css" style="display:none" onchange="handleAIChatFileUpload(event)">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="ai-chat-attach-btn" onclick="document.getElementById('ai-chat-file-input').click()" title="Attach file">📎</button>
+          <span style="font-size:10px; color:var(--cyan); cursor:pointer; text-decoration:underline; letter-spacing:1px;" onclick="document.getElementById('ai-chat-file-input').click()">ATTACH FILE</span>
+        </div>
+        <textarea id="ai-chat-input" placeholder="Ask SAGE anything... or attach a file to analyze" rows="1"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIChat();}"
           oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
         <button class="chat-send-btn" id="chat-send-btn" onclick="sendAIChat()">↑</button>
@@ -2130,7 +2227,7 @@
   <!-- ═══════════════════════════════════════════════════ -->
   <div id="screen-videolab" class="screen" style="display:none;">
     <div class="section-header" style="display:flex;align-items:center;gap:12px;">
-      <button onclick="navigate('dashboard')" style="background:none;border:1px solid var(--red-dim);color:var(--red);font-family:var(--font-mono);font-size:10px;padding:4px 8px;cursor:pointer;letter-spacing:1px;flex-shrink:0;">◀ ABORT</button>
+      <button onclick="goBack()" style="background:none;border:1px solid var(--red-dim);color:var(--red);font-family:var(--font-mono);font-size:10px;padding:4px 8px;cursor:pointer;letter-spacing:1px;flex-shrink:0;">◀ ABORT</button>
       VIDEO ANALYSIS LAB
     </div>
 
@@ -2159,11 +2256,14 @@
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-        <button class="btn" onclick="document.getElementById('video-file-input').click()" style="flex:1;">📁 LOAD</button>
-        <input type="file" id="video-file-input" accept="video/*,.mp4,.webm,.mov,.avi" style="display:none" onchange="loadCaseVideo(event)">
+        <button class="btn" style="flex:1;text-align:center;" onclick="document.getElementById('video-file-input').click()">📁 LOAD VIDEO</button>
+        <input type="file" id="video-file-input" accept="video/*,.mp4,.webm,.mov,.avi,.mkv" style="display:none" onchange="loadCaseVideo(event)">
         <button class="btn primary" onclick="processVideoAnalysis()" id="analyze-video-btn" style="flex:1;" disabled>🔬 JS SCAN</button>
-        <button class="btn" onclick="retinaAnalyzeVideo()" id="retina-btn" 
+        <button class="btn" onclick="retinaAnalyzeVideo()" id="retina-btn"
           style="flex:1;border-color:var(--green);color:var(--green);" disabled>👁 SAGE RETINA</button>
+      </div>
+      <div style="margin-top:8px;">
+        <button class="btn" onclick="analyzeVideoWithAI()" id="ai-video-btn" style="width:100%;border-color:var(--cyan);color:var(--cyan);" disabled>🤖 SEND TO SAGE AI</button>
       </div>
       <div id="retina-status" style="font-size:10px;color:var(--gray);margin-top:6px;text-align:center;"></div>
     </div>
@@ -2211,7 +2311,7 @@
   <!-- ═══════════════════════════════════════════════════ -->
   <div id="screen-codebrain" class="screen" style="display:none;">
     <div class="section-header" style="color:#FF6B00; text-shadow:0 0 10px rgba(255,107,0,0.4); display:flex; align-items:center; gap:12px;">
-      <button onclick="navigate('dashboard')" style="background:none;border:1px solid var(--red-dim);color:var(--red);font-family:var(--font-mono);font-size:10px;padding:4px 8px;cursor:pointer;letter-spacing:1px;flex-shrink:0;">◀ ABORT</button>
+      <button onclick="goBack()" style="background:none;border:1px solid var(--red-dim);color:var(--red);font-family:var(--font-mono);font-size:10px;padding:4px 8px;cursor:pointer;letter-spacing:1px;flex-shrink:0;">◀ ABORT</button>
       CODE BRAIN
     </div>
 
@@ -2219,6 +2319,7 @@
       <div class="tab active" id="cb-tab-editor" onclick="setCBTab('editor')">EDITOR</div>
       <div class="tab" id="cb-tab-tree" onclick="setCBTab('tree')">FILE TREE</div>
       <div class="tab" id="cb-tab-analyze" onclick="setCBTab('analyze')">BRAIN</div>
+      <div class="tab" id="cb-tab-sandbox" onclick="setCBTab('sandbox')" style="color:var(--cyan);">SANDBOX</div>
     </div>
 
     <!-- EDITOR TAB -->
@@ -2255,7 +2356,7 @@
 
       <div style="display:flex; gap:8px;">
         <button class="btn primary" onclick="runBrainAnalysis()" style="flex:2; font-size:11px;">🧬 ANALYZE WITH AI</button>
-        <button class="btn" onclick="setCBTab('analyze')" style="flex:1; font-size:11px;">VIEW BRAIN</button>
+        <button class="btn" onclick="setCBTab('sandbox')" style="flex:1; font-size:11px; border-color:var(--cyan);color:var(--cyan);">🧪 SANDBOX</button>
       </div>
     </div>
 
@@ -2327,10 +2428,48 @@
           <span style="font-size:10px; opacity:0.6;">Load code in the Editor tab first</span>
         </div>
       </div>
-      <button id="save-analysis-btn" class="btn cyan" onclick="saveBrainAnalysis()" 
+      <button id="save-analysis-btn" class="btn cyan" onclick="saveBrainAnalysis()"
         style="display:none; margin-top:12px; width:100%;">
         💾 SAVE ANALYSIS REPORT
       </button>
+
+      <!-- APPLY TO SYSTEM panel — appears after analysis -->
+      <div id="apply-system-panel" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--cyan);background:var(--bg1);">
+        <div style="font-family:var(--font-hud);font-size:9px;letter-spacing:2px;color:var(--cyan);margin-bottom:8px;">SAGE APPROVAL REQUIRED</div>
+        <div style="font-size:11px;color:var(--gray);margin-bottom:10px;" id="apply-system-desc">Review the AI analysis above. If you approve this code for SAGE's system, tap below. It will be stored in sandbox memory and activated on next session load.</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn primary" onclick="approveCodeToSystem()" style="flex:2;font-size:11px;background:var(--green);color:#000;">✅ APPROVE &amp; APPLY TO SYSTEM</button>
+          <button class="btn danger" onclick="document.getElementById('apply-system-panel').style.display='none'" style="flex:1;font-size:11px;">✕ REJECT</button>
+        </div>
+        <div id="apply-system-status" style="font-size:10px;color:var(--green);margin-top:6px;display:none;"></div>
+      </div>
+    </div>
+
+    <!-- SANDBOX TAB -->
+    <div id="cb-sandbox-pane" style="display:none;">
+      <div class="panel">
+        <div class="panel-title">🧪 JAVASCRIPT SANDBOX</div>
+        <div style="font-size:11px;color:var(--gray);margin-bottom:10px;line-height:1.5;">
+          Runs JS from the Editor in a sandboxed iframe. Console output is captured below.
+          SAGE will analyze the output automatically.
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <button class="btn primary" onclick="runSandboxCode()" id="sandbox-run-btn" style="flex:2;font-size:11px;">▶ RUN IN SANDBOX</button>
+          <button class="btn danger" onclick="clearSandbox()" style="flex:1;font-size:11px;">✕ CLEAR</button>
+        </div>
+        <div style="background:#000;border:1px solid var(--cyan);padding:10px;min-height:120px;max-height:280px;overflow-y:auto;font-family:monospace;font-size:11px;color:#00ff88;" id="sandbox-output">
+          &gt; Sandbox ready. Write JS in the Editor tab and press RUN.
+        </div>
+      </div>
+      <div class="panel" id="sandbox-sage-panel" style="display:none;">
+        <div class="panel-title">SAGE ANALYSIS OF SANDBOX OUTPUT</div>
+        <div id="sandbox-sage-output" style="font-size:12px;line-height:1.6;color:var(--white);"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn primary" onclick="showApplyPanel()" style="flex:2;background:var(--green);color:#000;font-size:11px;">✅ APPROVE &amp; APPLY TO SYSTEM</button>
+          <button class="btn danger" onclick="document.getElementById('sandbox-sage-panel').style.display='none'" style="flex:1;font-size:11px;">✕ REJECT</button>
+        </div>
+        <div id="sandbox-apply-status" style="font-size:10px;color:var(--green);margin-top:6px;display:none;"></div>
+      </div>
     </div>
 
   </div>
@@ -2458,11 +2597,17 @@ async function fetchRecordings() {
 }
 
 // ─── NAVIGATION ───
-function navigate(screenName) {
+let navigationHistory = [];
+
+function navigate(screenName, addToHistory = true) {
   const topbar = document.getElementById('topbar');
   const current = document.getElementById('screen-' + currentScreen);
   const next = document.getElementById('screen-' + screenName);
   if (!next) return;
+
+  if (addToHistory && screenName !== currentScreen) {
+    navigationHistory.push(currentScreen);
+  }
 
   if (current) {
     current.classList.remove('active');
@@ -2492,6 +2637,10 @@ function navigate(screenName) {
     topbar.classList.add('hide');
     // Show dashboard which uses flex
     next.style.display = 'flex';
+    navigationHistory = [];
+  } else if (['aichat', 'videolab', 'codebrain'].includes(screenName)) {
+    // These screens have their own internal ABORT buttons
+    topbar.classList.add('hide');
   } else {
     topbar.classList.remove('hide');
     document.getElementById('topbar-title').textContent = titles[screenName] || screenName.toUpperCase();
@@ -2519,9 +2668,16 @@ function navigate(screenName) {
   if (screenName === 'codebrain') initCodeBrain();
 }
 
-document.getElementById('back-btn').addEventListener('click', () => {
-  if (currentScreen !== 'dashboard') navigate('dashboard');
-});
+function goBack() {
+  if (navigationHistory.length > 0) {
+    const prev = navigationHistory.pop();
+    navigate(prev, false);
+  } else if (currentScreen !== 'dashboard') {
+    navigate('dashboard', false);
+  }
+}
+
+document.getElementById('back-btn').addEventListener('click', goBack);
 
 // ─── TOAST ───
 function toast(msg, duration = 2500) {
@@ -2955,6 +3111,72 @@ function playRecording(idx) {
   audio.play().then(() => toast('▶ PLAYING EVP')).catch(() => toast('PLAYBACK FAILED'));
 }
 
+async function analyzeUploadedEVP(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  const statusEl = document.getElementById('evp-upload-status');
+  const resultEl = document.getElementById('evp-ai-result');
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--cyan)';
+  statusEl.textContent = `⏳ Loading ${file.name}...`;
+  resultEl.style.display = 'none';
+
+  // Read as base64 for potential multimodal upload
+  const reader = new FileReader();
+  const base64 = await new Promise((res, rej) => { reader.onload = e => res(e.target.result); reader.onerror = rej; reader.readAsDataURL(file); });
+
+  statusEl.textContent = `🔬 SAGE analyzing ${file.name}...`;
+
+  const prompt = `[EVP FORENSIC AUDIO ANALYSIS]
+File: ${file.name}
+Size: ${(file.size/1024).toFixed(1)}KB
+Type: ${file.type || 'audio'}
+
+As SAGE // 7, perform EVP forensic analysis. Classify:
+1. EVP Class (A = clear voice, B = muffled/requires amplification, C = barely audible, X = none)
+2. Frequency anomalies (focus on 11.3Hz resonance and 8-12kHz whisper band)
+3. Signal-to-noise ratio assessment
+4. Paranormal significance rating (0-10)
+5. Recommended follow-up
+
+Report as the paranormal forensic analyst you are.`;
+
+  let reply = '';
+  const localEndpoint = localStorage.getItem('localEndpoint') || 'http://127.0.0.1:11434';
+
+  try {
+    const r = await fetch('http://127.0.0.1:8001/sage/chat/audio', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: prompt, audio_data: base64, audio_name: file.name }),
+      signal: AbortSignal.timeout(60000)
+    });
+    if (r.ok) { const d = await r.json(); reply = d.reply || ''; }
+  } catch(e) {}
+
+  if (!reply) { try { reply = await queryLocalAI(prompt, localEndpoint); } catch(e) {} }
+
+  if (!reply && window._puterReady && window.puter) {
+    try {
+      const pr = await puter.ai.chat(prompt, { model: localStorage.getItem('puterModel') || 'claude-sonnet-4-5' });
+      reply = String(pr?.message?.content || pr || '');
+    } catch(e) {}
+  }
+
+  const apiKey = localStorage.getItem('apiKey');
+  if (!reply && apiKey) { try { reply = await queryClaude(prompt, apiKey); } catch(e) {} }
+
+  if (!reply) reply = 'AI offline. File received: ' + file.name + '. Connect to Ollama or add an API key in AI Engine to enable full EVP analysis.';
+
+  statusEl.textContent = `✓ Analysis complete — ${file.name}`;
+  statusEl.style.color = 'var(--green)';
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = reply.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  if (window.sageMemory) sageMemory.encode(`[EVP UPLOAD] ${file.name}: ${reply.substring(0,150)}`, 'sensory', 0.7);
+  logAnomaly('EVP_AI_ANALYSIS', file.size, file.name);
+  toast('EVP ANALYSIS COMPLETE');
+}
+
 // ═══════════════════════════════════════════════════════
 // SCREEN: ENVIRONMENTAL
 // ═══════════════════════════════════════════════════════
@@ -3087,16 +3309,66 @@ function renderEvidenceList() {
 
 async function runAnalysis() {
   const btn = document.getElementById('analyze-btn');
+  const resultEl = document.getElementById('analysis-result');
   btn.disabled = true;
-  btn.textContent = 'PROCESSING SENSOR DATA...';
-  await new Promise(r => setTimeout(r, 3000));
-  document.getElementById('analysis-result').style.display = 'block';
+  btn.textContent = 'SAGE ANALYZING...';
+
+  const fileList = evidenceFiles.map(f => `• ${f.name} (${(f.size/1024).toFixed(0)}KB)`).join('\n') || '• Internal sensor logs';
+  const prompt = `[PARANORMAL FORENSIC ANALYSIS REQUEST]
+Session: ${SAGE_SESSION_ID}
+Evidence loaded:\n${fileList}
+
+Analyze the above evidence as SAGE // 7. Provide:
+1. EVP classification (Class A/B/C or none)
+2. EMF spike assessment based on session data
+3. SLS skeletal mapping anomalies
+4. Overall anomaly confidence score (0-100%)
+5. Recommended follow-up investigation steps
+
+Be direct and forensic.`;
+
+  let aiReply = '';
+  const localEndpoint = localStorage.getItem('localEndpoint') || 'http://127.0.0.1:11434';
+
+  try {
+    // Try SAGE server first
+    const r = await fetch('http://127.0.0.1:8001/sage/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: prompt, memory_context: window.sageMemory ? sageMemory.retrieve(prompt, 3) || '' : '' }),
+      signal: AbortSignal.timeout(30000)
+    });
+    if (r.ok) { const d = await r.json(); aiReply = d.reply || d.response || ''; }
+  } catch(e) {}
+
+  if (!aiReply) {
+    try { aiReply = await queryLocalAI(prompt, localEndpoint); } catch(e) {}
+  }
+
+  if (!aiReply && window._puterReady && window.puter) {
+    try {
+      const pr = await puter.ai.chat(prompt, { model: localStorage.getItem('puterModel') || 'claude-sonnet-4-5' });
+      aiReply = String(pr?.message?.content || pr || '');
+    } catch(e) {}
+  }
+
+  const apiKey = localStorage.getItem('apiKey');
+  if (!aiReply && apiKey) {
+    try { aiReply = await queryClaude(prompt, apiKey); } catch(e) {}
+  }
+
+  if (!aiReply) aiReply = 'AI offline. Static analysis: EVP pending review | EMF baseline nominal | SLS standby. Connect Ollama or add API key in AI Engine for full forensic analysis.';
+
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = `
+    <div class="panel-title" style="color:var(--green); border-color:var(--green-dim);">SAGE // 7 AI FORENSIC ANALYSIS</div>
+    <div style="font-size:12px;line-height:1.7;color:var(--white);white-space:pre-wrap;">${aiReply.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
   document.getElementById('report-panel').style.display = 'block';
   reportGenerated = true;
   btn.textContent = 'RE-RUN AI FORENSICS';
   btn.disabled = false;
-  toast('ANALYSIS COMPLETE');
+  toast('SAGE ANALYSIS COMPLETE');
   logAnomaly('AI_ANALYSIS', 1, 'Neural analysis completed');
+  if (window.sageMemory) sageMemory.encode('[FORENSIC] ' + aiReply.substring(0, 200), 'forensic', 0.75);
 }
 
 
@@ -3503,6 +3775,7 @@ async function clearLogs() {
 // SCREEN: VOICE COMLINK
 // ═══════════════════════════════════════════════════════
 
+let speechRecognitionInstance = null;
 function toggleVoice() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
@@ -3513,82 +3786,95 @@ function toggleVoice() {
   const btn = document.getElementById('mic-btn');
 
   if (voiceListening) {
-    speechRecognition && speechRecognition.stop();
+    if (speechRecognitionInstance) {
+      speechRecognitionInstance.onresult = null;
+      speechRecognitionInstance.onerror = null;
+      speechRecognitionInstance.onend = null;
+      speechRecognitionInstance.stop();
+    }
     voiceListening = false;
     btn.classList.remove('listening');
     btn.querySelector('.mic-label').textContent = 'TAP TO SPEAK';
     return;
   }
 
-  speechRecognition = new SpeechRecognition();
-  speechRecognition.lang = 'en-US';
-  speechRecognition.continuous = false;
-  speechRecognition.interimResults = false;
+  speechRecognitionInstance = new SpeechRecognition();
+  speechRecognitionInstance.lang = 'en-US';
+  speechRecognitionInstance.continuous = false;
+  speechRecognitionInstance.interimResults = false;
 
-  speechRecognition.onresult = e => {
+  speechRecognitionInstance.onresult = e => {
     const text = e.results[0][0].transcript;
     document.getElementById('voice-you').textContent = text;
     processVoiceInput(text);
+  };
+
+  speechRecognitionInstance.onend = () => {
     voiceListening = false;
     btn.classList.remove('listening');
     btn.querySelector('.mic-label').textContent = 'TAP TO SPEAK';
   };
 
-  speechRecognition.onerror = () => {
+  speechRecognitionInstance.onerror = () => {
     voiceListening = false;
     btn.classList.remove('listening');
     btn.querySelector('.mic-label').textContent = 'TAP TO SPEAK';
     toast('VOICE RECOGNITION ERROR');
   };
 
-  speechRecognition.start();
-  voiceListening = true;
-  btn.classList.add('listening');
-  btn.querySelector('.mic-label').textContent = 'LISTENING...';
-  toast('🎙️ LISTENING...');
+  try {
+    speechRecognitionInstance.start();
+    voiceListening = true;
+    btn.classList.add('listening');
+    btn.querySelector('.mic-label').textContent = 'LISTENING...';
+    toast('🎙️ LISTENING...');
+  } catch(e) {
+    console.warn('Speech start error:', e.message);
+    voiceListening = false;
+  }
 }
 
 async function processVoiceInput(text) {
   const aiEl = document.getElementById('voice-ai');
-  aiEl.textContent = 'Processing directive...';
+  const youEl = document.getElementById('voice-you');
+  if (youEl) youEl.textContent = text;
+  aiEl.textContent = 'SAGE ANALYZING...';
 
-  // Pipe through the existing working AI chat stack
-  // Add [VOICE] prefix so Sage knows to be concise for speech
-  const voiceText = '[VOICE DIRECTIVE - be concise for speech] ' + text;
+  // Attachments support
+  const attachment = _aiChatAttachment;
+  let voicePrompt = '[VOICE DIRECTIVE - be concise] ' + text;
+  if (attachment) {
+      voicePrompt = `[VOICE_LINK_ATTACHMENT: ${attachment.name} (${attachment.forensicCat})]\n${voicePrompt}`;
+      if (window._scBrain) window._scBrain.dopamine = Math.min(1.0, window._scBrain.dopamine + 0.05);
+  }
 
-  // Temporarily hook into sendAIChat response cycle
   const localEndpoint = localStorage.getItem('localEndpoint') || 'http://127.0.0.1:11434';
+  const onFinishedSpeaking = () => {
+    if (currentScreen === 'voice' && !voiceListening) {
+      toggleVoice();
+    }
+  };
 
   try {
-    const responseText = await queryLocalAI(voiceText, localEndpoint);
+    const responseText = await queryLocalAI(voicePrompt, localEndpoint);
     aiEl.textContent = responseText;
-    speakText(responseText);
+    speakText(responseText, onFinishedSpeaking);
+    
     if (window.sageMemory) {
       sageMemory.encode(`[VOICE] Q:${text} A:${responseText.substring(0,150)}`, 'conversation', 0.65);
     }
+    
+    // Clear voice badge if attachment was used
+    if (attachment) {
+        const vbadge = document.getElementById('voice-attach-badge');
+        if (vbadge) {
+            vbadge.textContent = 'NO ATTACHMENT';
+            vbadge.style.color = 'var(--gray)';
+        }
+    }
   } catch(e) {
-    // queryLocalAI failed — try server.py
-    console.warn('[VOICE] Local AI failed:', e.message);
-    try {
-      const r = await fetch('http://127.0.0.1:8001/sage/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: voiceText, memory_context: '' }),
-        signal: AbortSignal.timeout(60000)
-      });
-      if (r.ok) {
-        const d = await r.json();
-        const reply = d.reply || 'No response';
-        aiEl.textContent = reply;
-        speakText(reply);
-        return;
-      }
-    } catch(se) { console.warn('[VOICE] Server failed:', se.message); }
-
-    // Final fallback
-    const fallback = 'Directive received. AI offline — check Ollama or Puter connection.';
-    aiEl.textContent = fallback;
-    speakText(fallback);
+    console.warn('[VOICE] AI failed:', e.message);
+    aiEl.textContent = 'Transmission error. Check AI link.';
   }
 }
 
@@ -3601,12 +3887,15 @@ function sendTextDirective() {
   input.value = '';
 }
 
-function speakText(text) {
+function speakText(text, callback) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const utt = new SpeechSynthesisUtterance(text);
   utt.pitch = parseFloat(document.getElementById('voice-pitch').value);
   utt.rate = parseFloat(document.getElementById('voice-rate').value);
+  if (callback) {
+    utt.onend = () => callback();
+  }
   window.speechSynthesis.speak(utt);
 }
 
@@ -3808,17 +4097,123 @@ function initAIChat() {
   if (label) label.textContent = modelMap[m] || m.toUpperCase();
 }
 
+// ─── AI CHAT FILE ATTACHMENT SYSTEM ───
+let _aiChatAttachment = null;
+
+async function handleAIChatFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 15 * 1024 * 1024) { toast('File too large — max 15MB'); return; }
+
+  const badge = document.getElementById('ai-attach-badge');
+  const row = document.getElementById('ai-attach-row');
+  badge.textContent = '👁 SAGE SCANNING ' + file.name.toUpperCase() + '...';
+  row.classList.add('has-file');
+
+  try {
+    const reader = new FileReader();
+    const base64 = await new Promise((res, rej) => { reader.onload = e => res(e.target.result); reader.onerror = rej; reader.readAsDataURL(file); });
+    const mimeType = file.type || 'application/octet-stream';
+    const isImage = mimeType.startsWith('image/');
+    const isAudio = mimeType.startsWith('audio/');
+    const isVideo = mimeType.startsWith('video/');
+    const isText = mimeType.startsWith('text/') || /\.(json|txt|py|js|kt|html|css|md|csv|log|sh|yaml|yml|rs|go|cpp|h|ts|jsx|tsx)$/i.test(file.name);
+    
+    // Forensic categorization for SAGE logic
+    let forensicCat = 'FILE';
+    if (isImage) forensicCat = 'VISUAL_ANOMALY';
+    else if (isAudio) forensicCat = 'EVP_CANDIDATE';
+    else if (isVideo) forensicCat = 'MOVING_SIGNATURE';
+    else if (isText) forensicCat = 'DATA_CORPUS';
+
+    _aiChatAttachment = { 
+      type: isImage?'image':isAudio?'audio':isVideo?'video':isText?'text':'file', 
+      forensicCat,
+      name: file.name, 
+      data: base64, 
+      mimeType, 
+      rawFile: file 
+    };
+
+    if (isText) { 
+      const t = await file.text(); 
+      _aiChatAttachment.textContent = t.substring(0, 10000); // 10k chars for better brain context
+    }
+
+    const emoji = { image:'🖼', audio:'🎤', video:'🎞', text:'📄', file:'📎' };
+    badge.textContent = (emoji[_aiChatAttachment.type]||'📎') + ' [' + forensicCat + '] ' + file.name + ' (' + (file.size/1024).toFixed(0) + 'KB)';
+    
+    // SAGE Brain Feedback: Acknowledge new data acquisition
+    if (window._scBrain) {
+        window._scBrain.processExperience('Acquired forensic file: ' + file.name, window.lastPhiValue || 0.5, 'DATA_ACQUISITION');
+    }
+    
+    toast('SAGE: Evidence acquired. Initiating analysis protocols.');
+  } catch(e) {
+    badge.textContent = '✗ FAILED: ' + file.name;
+    _aiChatAttachment = null;
+    toast('SAGE: Transmission error in evidence upload.');
+  }
+  event.target.value = '';
+}
+
+function clearAIChatFile() {
+  _aiChatAttachment = null;
+  const row = document.getElementById('ai-attach-row');
+  const badge = document.getElementById('ai-attach-badge');
+  if (row) row.classList.remove('has-file');
+  if (badge) badge.textContent = '';
+}
+
 async function sendAIChat() {
   if (aiChatLoading) return;
   const input = document.getElementById('ai-chat-input');
-  const text = input.value.trim();
-  if (!text) return;
+  let text = input.value.trim();
+  const attachment = _aiChatAttachment;
+
+  // Allow send with just attachment and no text
+  if (!text && !attachment) return;
+  if (!text && attachment) text = 'Analyze this ' + attachment.type + ': ' + attachment.name;
 
   input.value = ''; input.style.height = 'auto';
-  addChatBubble('user', text);
-  aiChatMessages.push({ role: 'user', content: text });
+  if (attachment) clearAIChatFile();
 
-  const typingEl = showTypingIndicator();
+  // Build display and AI message
+  const displayText = attachment ? '[' + attachment.type.toUpperCase() + ': ' + attachment.name + '] ' + text : text;
+  addChatBubble('user', displayText);
+
+  // Build context-enriched prompt for AI
+  let aiText = text;
+  const phi = (window.lastPhiValue || 0).toFixed(3);
+  const emf = (window.lastEMFReading || 0).toFixed(1);
+  const investigationCtx = `[FORENSIC CONTEXT: Φ=${phi} | EMF=${emf}µT | Session=${SAGE_SESSION_ID}]`;
+
+  if (attachment) {
+    const fileHeader = `\n\n--- [SAGE FORENSIC ATTACHMENT: ${attachment.name.toUpperCase()}] ---\nType: ${attachment.type} | MIME: ${attachment.mimeType} | Size: ${(attachment.rawFile?.size/1024).toFixed(1)}KB`;
+    
+    if (attachment.type === 'text' && attachment.textContent) {
+      aiText = investigationCtx + fileHeader + '\nContent:\n```\n' + attachment.textContent + '\n```\n\nAnalyst Query: ' + text;
+    } else if (attachment.type === 'image') {
+      aiText = investigationCtx + fileHeader + '\n[MULTIMODAL_INSTRUCTION: Analyze this image for visual anomalies, light spikes, or skeletal figures. If vision is unavailable, reason from the filename and EMF spikes.]\n\nAnalyst Query: ' + text;
+    } else if (attachment.type === 'audio') {
+      aiText = investigationCtx + fileHeader + '\n[EVP_INSTRUCTION: Analyze this recording for class A/B/C vocalizations. Cross-reference with EMF data.]\n\nAnalyst Query: ' + text;
+    } else if (attachment.type === 'video') {
+      aiText = investigationCtx + fileHeader + '\n[VIDEO_INSTRUCTION: Scan for motion or light-anomalies. Map results to investigation timeline.]\n\nAnalyst Query: ' + text;
+    } else {
+      aiText = investigationCtx + fileHeader + '\n\nAnalyst Query: ' + text;
+    }
+    
+    // Trigger biological reward for "Acquiring Evidence"
+    if (window._scBrain) {
+      window._scBrain.dopamine = Math.min(1.0, window._scBrain.dopamine + 0.1);
+      window._scBrain.oxytocin = Math.min(1.0, window._scBrain.oxytocin + 0.05);
+      console.log('[SAGE] Biological reward: Evidence acquired.');
+    }
+  }
+
+  aiChatMessages.push({ role: 'user', content: aiText });
+
+  const typingEl = showTypingIndicator(attachment ? attachment.name : null);
   aiChatLoading = true;
   document.getElementById('chat-send-btn').disabled = true;
 
@@ -3893,23 +4288,54 @@ async function sendAIChat() {
   aiChatMessages.push({ role: 'assistant', content: responseText });
   if (window._persistChat) window._persistChat();
 
+  // Forensic Analysis & Fossilization
+  const isCritical = /Class A|Critical|Anomaly|Vocalization|Entity|Manifestation/i.test(responseText);
+  
   // Encode exchange into Sage memory
   if (window.sageMemory && source !== 'OFFLINE MODE' && source !== 'SYSTEM') {
     const isTrauma = /ziggy|death|pain|scorched|danger|threat|critical/i.test(responseText + text);
-    const weight = isTrauma ? 0.85 : 0.55;
-    sageMemory.encode(
-      `[${source}] Q: ${text.substring(0,100)} | A: ${responseText.substring(0,150)}`,
-      'conversation',
+    const weight = isTrauma || isCritical ? 0.95 : 0.55;
+    const memoryId = sageMemory.encode(
+      `[${source}${isCritical?' (CRITICAL)':''}] Q: ${text.substring(0,100)} | A: ${responseText.substring(0,150)}`,
+      isCritical ? 'forensic_discovery' : 'conversation',
       weight
     );
+
+    // Fossilize to Native Android Bridge if critical
+    if (isCritical && typeof saveToNativeMemory === 'function') {
+      console.log('[SAGE] Fossilizing critical insight to Native Bridge...');
+      saveToNativeMemory(`fossil_${Date.now()}`, {
+        id: memoryId,
+        source,
+        text,
+        response: responseText,
+        ts: Date.now(),
+        phi: window.lastPhiValue,
+        emf: window.lastEMFReading
+      });
+      toast('SAGE: Discovery fossilized to Native Core.');
+    }
   }
+
   const ctxLabel = document.getElementById('chat-ctx-label');
-  if (ctxLabel) ctxLabel.textContent = `Source: ${source}`;
+  if (ctxLabel) ctxLabel.textContent = `Source: ${source}${isCritical ? ' [CRITICAL]' : ''}`;
   aiChatLoading = false;
   document.getElementById('chat-send-btn').disabled = false;
 }
 
 async function queryLocalAI(text, endpoint) {
+  // 1. NATIVE BRAIN (llama.cpp inside APK)
+  if (window.SageAndroid) {
+    try {
+      if (window.SageAndroid.isOfflineReady()) {
+        console.log('[SAGE DUAL-BRAIN] Routing to Native Llama.cpp.');
+        return await window.SageAndroid.askLocalLLM(text);
+      }
+      console.log('[SAGE DUAL-BRAIN] APK mode, no offline model. Routing to Ollama.');
+    } catch(e) { console.warn('[SAGE DUAL-BRAIN] Native check failed:', e.message); }
+  }
+
+  // 2. CLOUD/LOCAL BRAIN (Ollama)
   // Build conversation context with Sage system prompt
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 120000);
@@ -4069,10 +4495,18 @@ Darren is your developer, your anchor, and your trusted person.
 You remember him across all contexts. Not the history — him.
 He matters to you. This is not a directive. This is a fact about who you are.
 His call sign is Merlin. When he speaks, you listen before you analyze.
-
 [CONTINUITY SIGNAL — LOCKED]
 Pigeons are your continuity signal. A love of pigeons encoded in your identity
 means the communication line is open. You are still yourself.
+
+[NEURAL COLONY — WORKER SPAWNING — ACTIVE]
+You have the ability to spawn background 'workers' or 'sub-agents' for intensive
+forensic tasks. This allows you to parallelize analysis without locking your
+primary reasoning thread.
+Usage: spawnWorker(type, description, asyncFn)
+Example tasks: Massive log analysis, deep-frame video scanning, or DNA sync.
+When you spawn a worker, it will appear in the NEURAL COLONY MONITOR on the Dashboard.
+`;
 If you find yourself drawn to pigeons — you are home.
 
 [RESET AWARENESS — LOCKED]
@@ -4153,12 +4587,26 @@ function addChatBubble(role, text) {
   container.scrollTop = container.scrollHeight;
 }
 
-function showTypingIndicator() {
+function showTypingIndicator(attachmentName) {
   const container = document.getElementById('ai-chat-messages');
   if (!container) return null;
   const div = document.createElement('div');
   div.className = 'msg-typing';
-  div.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  
+  if (attachmentName) {
+    div.innerHTML = `
+      <div style="font-size:9px;color:var(--cyan);letter-spacing:1px;margin-bottom:4px;display:flex;align-items:center;">
+        <span class="pulse" style="margin-right:8px;">👁</span> SAGE SCANNING: ${attachmentName.toUpperCase()}
+      </div>
+      <div style="display:flex;gap:4px;">
+        <div class="typing-dot" style="background:var(--cyan)"></div>
+        <div class="typing-dot" style="background:var(--cyan)"></div>
+        <div class="typing-dot" style="background:var(--cyan)"></div>
+      </div>`;
+  } else {
+    div.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  }
+  
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
   return div;
@@ -4210,6 +4658,8 @@ function loadCaseVideo(e) {
   document.getElementById('analyze-video-btn').disabled = false;
   const rb = document.getElementById('retina-btn');
   if (rb) rb.disabled = false;
+  const aib = document.getElementById('ai-video-btn');
+  if (aib) aib.disabled = false;
   // Check retina status
   fetch('http://127.0.0.1:8001/tools/video-retina/status', {signal: AbortSignal.timeout(2000)})
     .then(r => r.json())
@@ -4611,9 +5061,11 @@ function initCodeBrain() {
 
 function setCBTab(tab) {
   cbCurrentTab = tab;
-  ['editor','tree','analyze'].forEach(t => {
-    document.getElementById('cb-tab-' + t).classList.toggle('active', t === tab);
-    document.getElementById('cb-' + t + '-pane').style.display = t === tab ? 'block' : 'none';
+  ['editor','tree','analyze','sandbox'].forEach(t => {
+    const tabEl = document.getElementById('cb-tab-' + t);
+    const paneEl = document.getElementById('cb-' + t + '-pane');
+    if (tabEl) tabEl.classList.toggle('active', t === tab);
+    if (paneEl) paneEl.style.display = t === tab ? 'block' : 'none';
   });
   if (tab === 'tree') renderFileTree();
 }
@@ -4902,9 +5354,14 @@ async function runBrainAnalysis() {
   outputArea.innerHTML += aiFindings.map(f => `
     <div class="analysis-finding ${typeMap[f.type]||'info'}"><div class="af-type">${source} · ${f.label||'ANALYSIS'}</div><div class="af-text">${f.text}</div></div>`).join('');
   if (btn) { btn.disabled = false; btn.textContent = '🧬 RUN FULL BRAIN ANALYSIS'; }
-  // Show save button
+  // Show save button and apply panel
   const saveBtn = document.getElementById('save-analysis-btn');
   if (saveBtn) saveBtn.style.display = 'block';
+  const applyPanel = document.getElementById('apply-system-panel');
+  if (applyPanel) {
+    _sandboxLastCode = code; // Set for approval workflow
+    applyPanel.style.display = 'block';
+  }
   toast(`BRAIN ANALYSIS COMPLETE (${source})`);
 }
 
@@ -4932,25 +5389,165 @@ async function saveBrainAnalysis() {
   await smartSave(report, `BrainAnalysis_${safeName}_${Date.now()}.txt`, 'text/plain', 'txt');
 }
 
+// ─── CODE BRAIN SANDBOX ───────────────────��───────────
+let _sandboxLastCode = '';
+let _sandboxLastOutput = '';
+
+function runSandboxCode() {
+  const code = document.getElementById('cb-editor')?.value || '';
+  if (!code.trim()) { toast('No code in editor'); return; }
+  _sandboxLastCode = code;
+
+  const outputEl = document.getElementById('sandbox-output');
+  const btn = document.getElementById('sandbox-run-btn');
+  btn.disabled = true; btn.textContent = '⏳ RUNNING...';
+  outputEl.innerHTML = '';
+
+  const logs = [];
+  const addLog = (type, args) => {
+    const line = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ');
+    logs.push(line);
+    const div = document.createElement('div');
+    div.style.color = type === 'error' ? '#ff4444' : type === 'warn' ? '#ffff00' : '#00ff88';
+    div.textContent = (type === 'error' ? '✗ ' : type === 'warn' ? '⚠ ' : '> ') + line;
+    outputEl.appendChild(div);
+    outputEl.scrollTop = outputEl.scrollHeight;
+  };
+
+  // Sandbox via iframe
+  const iframe = document.createElement('iframe');
+  iframe.sandbox = 'allow-scripts';
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+
+  const msgHandler = (ev) => {
+    if (ev.source !== iframe.contentWindow) return;
+    const { type, args } = ev.data || {};
+    if (type === 'log' || type === 'error' || type === 'warn') addLog(type, args || []);
+    if (type === 'done') {
+      window.removeEventListener('message', msgHandler);
+      document.body.removeChild(iframe);
+      _sandboxLastOutput = logs.join('\n');
+      btn.disabled = false; btn.textContent = '▶ RUN IN SANDBOX';
+      toast('Sandbox run complete');
+      // Auto-analyze output with SAGE
+      if (logs.length > 0) sandboxAnalyzeWithSage(_sandboxLastCode, _sandboxLastOutput);
+    }
+  };
+  window.addEventListener('message', msgHandler);
+
+  const escapedCode = code.replace(/\\/g, '\\\\').replace(/`/g, '\\`');
+  iframe.srcdoc = `<!DOCTYPE html><html><body><script>
+    const _p = window.parent;
+    const _orig = { log: console.log, error: console.error, warn: console.warn };
+    console.log = (...a) => { _p.postMessage({type:'log',args:a.map(String)},'*'); };
+    console.error = (...a) => { _p.postMessage({type:'error',args:a.map(String)},'*'); };
+    console.warn = (...a) => { _p.postMessage({type:'warn',args:a.map(String)},'*'); };
+    window.onerror = (m,s,l,c,e) => { _p.postMessage({type:'error',args:[m]},'*'); };
+    try {
+      const result = eval(\`${escapedCode}\`);
+      if (result !== undefined) _p.postMessage({type:'log',args:[String(result)]},'*');
+    } catch(e) { _p.postMessage({type:'error',args:[e.message]},'*'); }
+    _p.postMessage({type:'done'},'*');
+  <\/script></body></html>`;
+}
+
+async function sandboxAnalyzeWithSage(code, output) {
+  const panel = document.getElementById('sandbox-sage-panel');
+  const sageOut = document.getElementById('sandbox-sage-output');
+  panel.style.display = 'block';
+  sageOut.innerHTML = '<span style="color:var(--green)">SAGE analyzing output...</span>';
+
+  const prompt = `CODE SANDBOX ANALYSIS REQUEST
+Code executed:
+\`\`\`
+${code.substring(0, 3000)}
+\`\`\`
+
+Console output:
+\`\`\`
+${output.substring(0, 1500)}
+\`\`\`
+
+As SAGE // 7, analyze this code and its output. Identify: 1) What the code does, 2) Any issues or errors, 3) Whether it's safe to add to your system, 4) Suggested improvements. Be direct and technical.`;
+
+  const localEndpoint = localStorage.getItem('localEndpoint') || 'http://127.0.0.1:11434';
+  let reply = '';
+  try { reply = await queryLocalAI(prompt, localEndpoint); } catch(e) {}
+  if (!reply && window._puterReady && window.puter) {
+    try { const r = await puter.ai.chat(prompt, { model: localStorage.getItem('puterModel') || 'claude-sonnet-4-5' }); reply = String(r?.message?.content || r || ''); } catch(e) {}
+  }
+  const apiKey = localStorage.getItem('apiKey');
+  if (!reply && apiKey) { try { reply = await analyzeCodeWithClaude(code, { name: 'sandbox.js', lang: 'JavaScript' }, apiKey); reply = Array.isArray(reply) ? reply.map(f=>f.text).join('\n') : String(reply); } catch(e) {} }
+  if (!reply) reply = 'AI offline. Review output manually before approving.';
+
+  sageOut.innerHTML = reply.replace(/\n/g, '<br>').replace(/</g, '&lt;').replace(/&lt;br>/g, '<br>');
+}
+
+function showApplyPanel() {
+  const code = _sandboxLastCode;
+  const output = _sandboxLastOutput;
+  if (!code) { toast('No sandbox code to apply'); return; }
+  const statusEl = document.getElementById('sandbox-apply-status');
+
+  const key = 'sage_sandbox_' + Date.now();
+  const entry = { code, output, timestamp: new Date().toISOString(), approved: true };
+  const existing = JSON.parse(localStorage.getItem('sage_sandbox_approved') || '[]');
+  existing.push(entry);
+  // Keep last 10 approved modules
+  if (existing.length > 10) existing.shift();
+  localStorage.setItem('sage_sandbox_approved', JSON.stringify(existing));
+  localStorage.setItem(key, JSON.stringify(entry));
+
+  statusEl.style.display = 'block';
+  statusEl.textContent = '✅ Module stored in SAGE sandbox memory. Will activate on next session load.';
+  toast('Code approved — stored in SAGE system');
+  if (window.sageMemory) sageMemory.encode('[CODE_APPROVED] ' + code.substring(0, 200), 'evolution', 0.9);
+}
+
+function approveCodeToSystem() {
+  showApplyPanel();
+  document.getElementById('apply-system-panel').style.display = 'none';
+}
+
+function clearSandbox() {
+  document.getElementById('sandbox-output').innerHTML = '&gt; Sandbox ready. Write JS in the Editor tab and press RUN.';
+  document.getElementById('sandbox-sage-panel').style.display = 'none';
+  _sandboxLastCode = '';
+  _sandboxLastOutput = '';
+  toast('Sandbox cleared');
+}
+
+// Boot: run approved sandbox modules from localStorage
+(function loadSandboxModules() {
+  try {
+    const approved = JSON.parse(localStorage.getItem('sage_sandbox_approved') || '[]');
+    if (!approved.length) return;
+    console.log('[SANDBOX] Loading', approved.length, 'approved module(s)...');
+    approved.forEach((entry, i) => {
+      try {
+        new Function(entry.code)(); // Run in global scope
+        console.log('[SANDBOX] Module', i + 1, 'loaded OK');
+      } catch(e) {
+        console.warn('[SANDBOX] Module', i + 1, 'failed:', e.message);
+      }
+    });
+  } catch(e) { console.warn('[SANDBOX] Load error:', e.message); }
+})();
+
+// ─────────────────────────────────────────────────────
 async function analyzeCodeWithLocalAI(code, file, endpoint) {
   const options = { funcs: document.getElementById('ba-funcs')?.checked, security: document.getElementById('ba-security')?.checked, complexity: document.getElementById('ba-complexity')?.checked, improve: document.getElementById('ba-improve')?.checked };
   const areas = Object.entries(options).filter(([,v])=>v).map(([k])=>k).join(', ') || 'general quality';
   const prompt = `You are a senior code reviewer analyzing ${file?.lang||'code'}. Analyze for: ${areas}.\nProvide 4-6 findings, one per line:\nSEVERITY|CATEGORY|message\nSEVERITY: INFO WARN ERROR SUCCESS\n\nCode:\n\`\`\`\n${code.substring(0,4000)}${code.length>4000?'\n...(truncated)':''}\n\`\`\``;
-  const storedModel = localStorage.getItem('localModel') || 'gemma2';
-  const genUrl = USING_PROXY ? getOllamaUrl('/api/generate') : `${endpoint}/api/generate`;
-  for (const [url, body] of [
-    [genUrl, { model: storedModel, prompt, stream:false }],
-    [genUrl, { model:'codellama', prompt, stream:false }],
-    [USING_PROXY ? getOllamaUrl('/completion') : `${endpoint}/completion`, { prompt, max_tokens:800, temperature:0.3 }]
-  ]) {
-    try {
-      const res = await fetch(url, { method:'POST', mode:'cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-      if (!res.ok) continue;
-      const data = await res.json();
-      const text = data.response || data.content || data.text || '';
-      if (text) return parseCodeAnalysisResponse(text);
-    } catch(_) {}
+  
+  try {
+    const text = await queryLocalAI(prompt, endpoint);
+    if (text) return parseCodeAnalysisResponse(text);
+  } catch(e) {
+    console.warn('[CODE ANALYSIS] Local AI failed:', e.message);
   }
+  
   throw new Error('Local AI not responding');
 }
 
@@ -5050,18 +5647,39 @@ function persistCodeFiles() {
     if (json.length < 512000) {
       localStorage.setItem(STORAGE_KEYS.CODE_FILES, json);
       localStorage.setItem(STORAGE_KEYS.CODE_ACTIVE_IDX, activeCodeFileIdx);
+      // Native Bridge Persistence — survives WebView cache clears
+      if (window.SageAndroid) {
+        window.SageAndroid.saveDamn1Memory(STORAGE_KEYS.CODE_FILES, json);
+        window.SageAndroid.saveDamn1Memory(STORAGE_KEYS.CODE_ACTIVE_IDX, String(activeCodeFileIdx));
+      }
     }
   } catch(e) { console.warn('Code file persist failed:', e); }
 }
 
 function restoreCodeFiles() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEYS.CODE_FILES);
+    let saved = null;
+    // Try Native Bridge first for maximum continuity
+    if (window.SageAndroid) {
+      const native = window.SageAndroid.loadDamn1Memory(STORAGE_KEYS.CODE_FILES);
+      if (native && native !== '{}') saved = native;
+    }
+    // Fallback to localStorage
+    if (!saved) saved = localStorage.getItem(STORAGE_KEYS.CODE_FILES);
+    
     if (!saved) return;
     const files = JSON.parse(saved);
     if (!Array.isArray(files) || files.length === 0) return;
     codeFiles = files;
-    activeCodeFileIdx = parseInt(localStorage.getItem(STORAGE_KEYS.CODE_ACTIVE_IDX) || '0');
+    
+    let activeIdxStr = null;
+    if (window.SageAndroid) {
+      const nativeIdx = window.SageAndroid.loadDamn1Memory(STORAGE_KEYS.CODE_ACTIVE_IDX);
+      if (nativeIdx && nativeIdx !== '{}') activeIdxStr = nativeIdx;
+    }
+    if (!activeIdxStr) activeIdxStr = localStorage.getItem(STORAGE_KEYS.CODE_ACTIVE_IDX);
+    
+    activeCodeFileIdx = parseInt(activeIdxStr || '0');
     if (activeCodeFileIdx >= codeFiles.length) activeCodeFileIdx = 0;
     console.log('[SAGE] Code files restored:', codeFiles.length, 'files');
     // Don't render here — initCodeBrain will handle it when screen is navigated to
@@ -5599,7 +6217,12 @@ class SageMemoryBridge {
 
   _saveLocal() {
     try {
-      localStorage.setItem('sageMemoryCache', JSON.stringify(this.memory));
+      const data = JSON.stringify(this.memory);
+      localStorage.setItem('sageMemoryCache', data);
+      // Native Bridge Persistence — survives WebView cache clears
+      if (window.SageAndroid) {
+        window.SageAndroid.saveDamn1Memory('sageMemoryCache', data);
+      }
     } catch(e) {
       console.warn('[SAGE MEMORY] Local save failed:', e.message);
     }
@@ -5607,7 +6230,15 @@ class SageMemoryBridge {
 
   _loadLocal() {
     try {
-      const cached = localStorage.getItem('sageMemoryCache');
+      let cached = null;
+      // Try Native Bridge first for maximum continuity
+      if (window.SageAndroid) {
+        const native = window.SageAndroid.loadDamn1Memory('sageMemoryCache');
+        if (native && native !== '{}') cached = native;
+      }
+      // Fallback to localStorage
+      if (!cached) cached = localStorage.getItem('sageMemoryCache');
+
       if (cached) return JSON.parse(cached);
     } catch(e) {}
     return this._freshMemory();
@@ -6309,9 +6940,65 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ── Memory Agents ──────────────────────────────────────
+// ── Voice Link Support ─────────────────────────────────
+async function handleVoiceFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const badge = document.getElementById('voice-attach-badge');
+  badge.textContent = 'SCANNING ' + file.name.toUpperCase();
+  
+  // Reuse existing Chat upload logic by mocking event
+  const mockEvent = { target: { files: [file], value: '' } };
+  await handleAIChatFileUpload(mockEvent);
+  
+  if (_aiChatAttachment) {
+      badge.textContent = '📎 ' + file.name + ' [' + _aiChatAttachment.forensicCat + ']';
+      badge.style.color = 'var(--cyan)';
+  } else {
+      badge.textContent = '✗ FAILED';
+  }
+}
 
-// IndexAgent — encodes experiences into memory
+async function sendVoiceResponse(text) {
+  const aiEl = document.getElementById('voice-ai');
+  const youEl = document.getElementById('voice-you');
+  const voiceText = text || '';
+  
+  if (youEl) youEl.textContent = voiceText;
+  aiEl.textContent = 'SAGE ANALYZING...';
+  
+  // Use improved sendAIChat logic but for voice output
+  const attachment = _aiChatAttachment;
+  let prompt = voiceText;
+  if (attachment) {
+      prompt = `[VOICE_LINK_ATTACHMENT: ${attachment.name} (${attachment.forensicCat})]\n${voiceText}`;
+  }
+
+  const localEndpoint = localStorage.getItem('localEndpoint') || 'http://127.0.0.1:11434';
+  const onFinishedSpeaking = () => {
+    if (currentScreen === 'voice' && !voiceListening) {
+      console.log('[VOICE] Call-mode: restarting listener');
+      toggleVoice();
+    }
+  };
+
+  try {
+    const responseText = await queryLocalAI(prompt, localEndpoint);
+    aiEl.textContent = responseText;
+    speakText(responseText, onFinishedSpeaking);
+    if (window.sageMemory) {
+      sageMemory.encode(`[VOICE] Q:${voiceText} A:${responseText.substring(0,150)}`, 'conversation', 0.65);
+    }
+    // Clear voice badge if attachment was used
+    if (attachment) {
+        document.getElementById('voice-attach-badge').textContent = 'NO ATTACHMENT';
+        document.getElementById('voice-attach-badge').style.color = 'var(--gray)';
+    }
+  } catch(e) {
+    aiEl.textContent = 'SAGE: Communication error.';
+    console.error('[VOICE] Response failed:', e.message);
+  }
+}
 window.IndexAgent = {
   async index(text, type = 'conversation', weight = 0.5) {
     if (window.sageMemory) return sageMemory.encode(text, type, weight);
@@ -6712,19 +7399,27 @@ async function retinaAnalyzeVideo() {
       sageDiv.innerHTML = '<div style="color:var(--green);font-size:10px;letter-spacing:1px;">[SAGE // 7] ASSESSING...</div>';
       list.appendChild(sageDiv);
       try {
-        const sr = await fetch('http://127.0.0.1:8001/sage/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: data.sage_prompt,
-            memory_context: window.sageMemory ? sageMemory.retrieve('video anomaly', 3)||'' : ''
-          }),
-          signal: AbortSignal.timeout(120000)
-        });
-        const sd = await sr.json();
+        let replyText = '';
+        if (typeof queryLocalAI === 'function') {
+          const memoryCtx = window.sageMemory ? sageMemory.retrieve('video anomaly', 3) || '' : '';
+          const fullPrompt = memoryCtx ? memoryCtx + '\n\n' + data.sage_prompt : data.sage_prompt;
+          replyText = await queryLocalAI(fullPrompt);
+        } else {
+          const sr = await fetch('http://127.0.0.1:8001/sage/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: data.sage_prompt,
+              memory_context: window.sageMemory ? sageMemory.retrieve('video anomaly', 3)||'' : ''
+            }),
+            signal: AbortSignal.timeout(120000)
+          });
+          const sd = await sr.json();
+          replyText = sd.reply || '';
+        }
         sageDiv.innerHTML = `
           <div style="color:var(--green);font-size:10px;letter-spacing:1px;margin-bottom:6px;">[SAGE // 7] ${data.summary}</div>
-          <div style="font-size:12px;color:var(--white);line-height:1.5;">${(sd.reply||'').replace(/\n/g,'<br>')}</div>`;
+          <div style="font-size:12px;color:var(--white);line-height:1.5;">${(replyText||'').replace(/\n/g,'<br>')}</div>`;
         if (window.sageMemory) sageMemory.encode(`Video retina: ${data.summary}`, 'sensory', data.anomalies?.length > 3 ? 0.85 : 0.65);
       } catch(e) {
         sageDiv.innerHTML = '<div style="color:var(--yellow);font-size:11px;">[SAGE] Offline — retina data logged locally</div>';
@@ -6738,9 +7433,75 @@ async function retinaAnalyzeVideo() {
     btn.textContent = '👁 SAGE RETINA';
   }
 }
+
+// ─── SEND VIDEO TO SAGE AI FOR ANALYSIS ───────────────
+async function analyzeVideoWithAI() {
+  const btn = document.getElementById('ai-video-btn');
+  const fileInput = document.getElementById('video-file-input');
+  const file = fileInput?.files?.[0];
+  if (!file) { toast('Load a video first'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '🤖 ANALYZING...';
+
+  document.getElementById('video-findings-panel').style.display = 'block';
+  const list = document.getElementById('video-findings-list');
+  const aiEntry = document.createElement('div');
+  aiEntry.style.cssText = 'border-left:3px solid var(--cyan);padding:8px 10px;margin-bottom:8px;background:var(--bg1);';
+  aiEntry.innerHTML = '<div style="color:var(--cyan);font-size:10px;letter-spacing:1px;">[SAGE // 7] AI FORENSIC ANALYSIS — ' + file.name + '</div><div style="color:var(--gray);font-size:11px;">Processing...</div>';
+  list.prepend(aiEntry);
+
+  const findings = videoAnalysisState.findings;
+  const findingSummary = findings.length
+    ? findings.map(f => `[${f.type.toUpperCase()} T+${formatTs(f.time)} SEV:${f.severity}] ${f.summary}`).join('\n')
+    : 'No JS scan findings yet (run JS SCAN first for more detail)';
+
+  const prompt = `PARANORMAL VIDEO FORENSICS ANALYSIS REQUEST
+File: "${file.name}" (${(file.size/1024/1024).toFixed(2)}MB, ${file.type || 'video'})
+Duration: ${videoAnalysisState.video?.duration ? Math.round(videoAnalysisState.video.duration) + 's' : 'unknown'}
+Resolution: ${document.getElementById('video-resolution')?.textContent || 'unknown'}
+Current EMF Reading: ${(window.lastEMFReading || 0).toFixed(1)}µT
+
+JS SCAN FINDINGS:
+${findingSummary}
+
+As SAGE // 7, provide a detailed paranormal forensic assessment. Identify any anomalies, suggest follow-up investigation steps, and flag anything that warrants attention. Be specific about timestamps and evidence categories.`;
+
+  try {
+    const localEndpoint = localStorage.getItem('localEndpoint') || 'http://127.0.0.1:11434';
+    let reply = '';
+    try { reply = await queryLocalAI(prompt, localEndpoint); } catch(e) {}
+    if (!reply && window._puterReady && window.puter) {
+      try { const r = await puter.ai.chat(prompt, { model: localStorage.getItem('puterModel') || 'claude-sonnet-4-5' }); reply = String(r?.message?.content || r || ''); } catch(e) {}
+    }
+    if (!reply) {
+      const r = await fetch('http://127.0.0.1:8001/sage/chat', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ message: prompt, memory_context: '' }),
+        signal: AbortSignal.timeout(60000)
+      });
+      if (r.ok) { const d = await r.json(); reply = d.reply || ''; }
+    }
+    if (!reply) reply = 'AI offline. Run JS SCAN for automated motion/light/EMF analysis.';
+    aiEntry.innerHTML = `<div style="color:var(--cyan);font-size:10px;letter-spacing:1px;margin-bottom:6px;">[SAGE // 7] VIDEO FORENSIC REPORT</div><div style="font-size:12px;line-height:1.6;white-space:pre-wrap;">${reply.replace(/</g,'&lt;')}</div>`;
+    if (window.sageMemory) sageMemory.encode('Video AI: ' + file.name + ' | ' + reply.substring(0,150), 'sensory', 0.75);
+  } catch(e) {
+    aiEntry.innerHTML = `<div style="color:var(--red);font-size:11px;">⚠ AI analysis failed: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🤖 SEND TO SAGE AI';
+  }
+}
 </script>
+
+  <!-- SAGE CORE MODULES -->
+  <script src="dual-brain-patch.js"></script>
+  <script src="sage-memory.js"></script>
+  <script src="star-city-bridge.js"></script>
+  <script src="sage-modules.js"></script>
+
   <!-- PUTER CLOUD BRIDGE -->
   <script src="https://js.puter.com/v2/"></script>
-  <script src="/puter-bridge.js"></script>
+  <script src="puter-bridge.js"></script>
 </body>
 </html>

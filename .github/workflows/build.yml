@@ -26,6 +26,9 @@ jobs:
           cp index.html app/src/main/assets/ 2>/dev/null || true
           cp star-city-bridge.js app/src/main/assets/ 2>/dev/null || true
           cp sage-memory.js app/src/main/assets/ 2>/dev/null || true
+          cp dual-brain-patch.js app/src/main/assets/ 2>/dev/null || true
+          cp sage-modules.js app/src/main/assets/ 2>/dev/null || true
+          cp puter-bridge.js app/src/main/assets/ 2>/dev/null || true
 
       - name: Grant Gradle Permission
         run: chmod +x ./gradlew
