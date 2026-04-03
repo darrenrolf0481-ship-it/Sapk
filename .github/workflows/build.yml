@@ -2,7 +2,7 @@ name: Paranormal OS — APK Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "New" ]
   workflow_dispatch:
 
 jobs:
